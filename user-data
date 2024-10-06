@@ -1,0 +1,33 @@
+#cloud-config
+ssh_authorized_keys:
+  - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGBdB0np3PVOcmo4mzj+GPdVCzSA0u04UOpquykI8b7y github
+
+write_files:
+  - path: /etc/selinux/config
+    permissions: "0644"
+    content: |
+      SELINUX=disabled
+      SELINUXTYPE=targeted
+  - path: /etc/profile.d/prompt.sh
+    permissions: "0644"
+    owner: root:wheel
+    content: |
+      export PS1='$(export XIT=$? && echo -n "\[\033[0;32m\]\u " && [ "$XIT" -ne "0" ] && echo -n "\[\033[1;31m\]➜ " || echo -n "\[\033[0m\]➜ " && echo -n "\[\033[1;34m\]\w " && echo -n "\[\033[0m\]$ ")'
+
+runcmd:
+  - setenforce 0
+  - mkdir -p /LFS
+  - mount /LFS
+  - mkdir -p /home/fedora/data
+  - mount -t 9p -o trans=virtio data_share /data
+  - chown fedora:fedora /data
+
+fs_setup:
+  - label: lfs
+    filesystem: ext4
+    device: /dev/nvme0n1
+    partition: auto
+
+mounts:
+  - [/dev/nvme0n1, /LFS, "ext4", "defaults", "1", "1"]
+  - [data_share, /data, "9p", "trans=virtio,defaults", "0", "0"]

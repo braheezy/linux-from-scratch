@@ -1,0 +1,27 @@
+#!/bin/bash
+
+alias lfs-ssh='TERM=xterm ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 -i ~/.ssh/id_ed25519 fedora@localhost'
+
+alias lfs-gui='qemu-system-x86_64 \
+    -m 8192 \
+    -smp 8 \
+    -cpu host \
+    -enable-kvm \
+    -drive file=f40.qcow2,format=qcow2,if=virtio,cache=writeback,discard=on \
+    -netdev user,id=net0,hostfwd=tcp::2222-:22 \
+     -drive file=lfs-workspace.qcow2,if=none,id=drive1,format=qcow2,cache=none,discard=on \
+    -device nvme,drive=drive1,serial=lfswork \
+    -device virtio-net,netdev=net0 \
+    -cdrom cloud-init.iso \
+    -boot order=c \
+    -monitor unix:/tmp/qemu-monitor,server,nowait \
+    -fsdev local,id=data,path=./data,security_model=mapped \
+    -device virtio-9p-pci,fsdev=data,mount_tag=data_share'
+
+alias lfs-up='lfs-gui -display none'
+
+alias lfs-kill='echo "quit" | socat UNIX-CONNECT:/tmp/qemu-monitor stdio'
+
+alias lfs-update-iso='xorriso -dev cloud-init.iso -map user-data /user-data -map meta-data /meta-data'
+
+alias lfs-reset='lfs-kill &>/dev/null && rm f40.qcow2 && cp Fedora-Cloud-Base-Generic.x86_64-40-1.14.qcow2 f40.qcow2'
